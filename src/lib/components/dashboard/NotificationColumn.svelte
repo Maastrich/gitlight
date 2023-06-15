@@ -7,8 +7,10 @@
 	import { ArrowUp, Folder } from '~/lib/icons';
 	import { Button } from '../common';
 	import SkeletonEvent from './SkeletonEvent.svelte';
-	import { loading, largeScreen } from '~/lib/stores';
+	import { loading, largeScreen, settings } from '~/lib/stores';
 	import Notification from './Notification.svelte';
+	import Trash from '~/lib/icons/Trash.svelte';
+	import { browser } from '$app/environment';
 
 	type SvelteAnimation = (
 		node: Element,
@@ -17,6 +19,7 @@
 		}
 	) => () => TransitionConfig;
 
+	export let id: string;
 	export let icon: ComponentType;
 	export let title: string;
 	export let notifications: NotificationData[];
@@ -26,12 +29,20 @@
 		send: SvelteAnimation;
 		settings: CrossfadeParams;
 	};
-	const { receive, send, settings } = transitions;
+	const { receive, send, settings: transitionSettings } = transitions;
 
 	let list: HTMLUListElement;
 	let scrolled = false;
 	let empty = !notifications.length;
 	let noScroll = false;
+
+	let archiveNotifications: Array<string> = [];
+
+	settings.subscribe((value) => {
+		if (value.archive !== id) {
+			archiveNotifications = [];
+		}
+	});
 
 	const handleScroll = debounce((e: Event) => {
 		scrolled = (e.target as HTMLElement).scrollTop > 100;
@@ -40,6 +51,22 @@
 	function handleScrollToTop() {
 		list.scrollTo({ top: 0, behavior: 'smooth' });
 		scrolled = false;
+	}
+
+	function handleToggleArchive() {
+		if (browser && $settings.archive === id) {
+			$settings.archive = undefined;
+		} else {
+			$settings.archive = id;
+		}
+	}
+
+	function handleArchiveNotification({ detail: { id } }: CustomEvent<{ id: string }>) {
+		if (archiveNotifications.includes(id)) {
+			archiveNotifications = archiveNotifications.filter((i) => i !== id);
+		} else {
+			archiveNotifications = [...archiveNotifications, id];
+		}
 	}
 
 	onMount(() => {
@@ -55,7 +82,7 @@
 	} else {
 		setTimeout(() => {
 			empty = true;
-		}, settings.duration as number);
+		}, transitionSettings.duration as number);
 	}
 
 	$: {
@@ -63,7 +90,7 @@
 		noScroll = true;
 		setTimeout(() => {
 			noScroll = false;
-		}, settings.duration as number);
+		}, transitionSettings.duration as number);
 	}
 
 	function conditionalFlip(...args: Parameters<typeof flip>) {
@@ -78,6 +105,16 @@
 		<p class="number">{notifications.length}</p>
 		<div class="addon-container">
 			<slot name="header-addon" />
+			{#if !empty}
+				<button
+					title="Clear all"
+					class="trash"
+					class:archivable={$settings.archive === id}
+					on:click={handleToggleArchive}
+				>
+					<Trash />
+				</button>
+			{/if}
 		</div>
 	</div>
 	{#if scrolled}
@@ -97,9 +134,14 @@
 					class="item"
 					in:receive={{ key: notification.id }}
 					out:send={{ key: notification.id }}
-					animate:conditionalFlip={index < 5 ? settings : undefined}
+					animate:conditionalFlip={index < 5 ? transitionSettings : undefined}
 				>
-					<Notification data={notification} />
+					<Notification
+						data={notification}
+						archivable={$settings.archive === id}
+						archived={archiveNotifications.includes(notification.id)}
+						on:archive={handleArchiveNotification}
+					/>
 				</li>
 			{/each}
 		{:else}
@@ -184,6 +226,8 @@
 
 		.addon-container {
 			margin-left: auto;
+			display: flex;
+			gap: 0.5rem;
 		}
 	}
 
@@ -233,5 +277,16 @@
 		.title {
 			@include typography.heading-2;
 		}
+	}
+
+	.trash {
+		padding: 0.3rem;
+		border-radius: 8px;
+		transition: background-color 0.2s ease-in-out;
+		&:hover,
+		&.archivable {
+			background-color: variables.$blue-2;
+		}
+		// set background-color to red if $settings.archive === id
 	}
 </style>

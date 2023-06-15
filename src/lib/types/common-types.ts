@@ -76,4 +76,5 @@ export type Settings = {
 	readWhenPin: boolean;
 	notificationAxis: 'Auto' | 'Vertical' | 'Horizontal';
 	sidebarHidden: boolean;
+	archive?: string;
 };

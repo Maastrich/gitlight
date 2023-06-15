@@ -130,6 +130,7 @@
 	<ScrollbarContainer>
 		<section class="columns-container" class:horizontal={!$largeScreen}>
 			<NotificationColumn
+				id="pinned"
 				icon={Pin}
 				title="Pinned"
 				notifications={pinned}
@@ -138,6 +139,7 @@
 			/>
 			<Separator vertical={$largeScreen} />
 			<NotificationColumn
+				id="unread"
 				icon={Mail}
 				title="Unread"
 				notifications={unread}
@@ -155,6 +157,7 @@
 			</NotificationColumn>
 			<Separator vertical={$largeScreen} />
 			<NotificationColumn
+				id="read"
 				icon={Check}
 				title="Read"
 				notifications={read}

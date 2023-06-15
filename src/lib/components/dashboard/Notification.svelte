@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { createEventDispatcher, onDestroy } from 'svelte';
 	import { fetchGithub, formatRelativeDate, getHex, lightenColor } from '~/lib/helpers';
 	import { Check, ExternalLink, Pin, Mail, Unpin } from '~/lib/icons';
 	import { Button, Tooltip } from '../common';
@@ -8,6 +8,11 @@
 
 	export let data: NotificationData;
 	export let interactive = true;
+	export let archivable = false;
+	export let archived = false;
+	let dispatch = createEventDispatcher();
+
+	export const archiveNotification = () => dispatch('archive', { id: data.id });
 
 	let {
 		id,
@@ -82,9 +87,12 @@
 	}
 </script>
 
-<div class="container" class:unread>
+<div class="container" class:unread class:archived>
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<div
 		class="notification"
+		class:archived
+		on:click={archivable ? archiveNotification : undefined}
 		on:mouseenter={isNew && interactive ? () => (isNew = false) : undefined}
 	>
 		{#if isNew && unread}
@@ -124,7 +132,12 @@
 				{/each}
 			</ul>
 		{/if}
-		{#if interactive}
+		{#if archivable}
+			<div class="persistent-over">
+				<input class="archive-radio" type="radio" checked={archived} />
+			</div>
+		{/if}
+		{#if interactive && !archivable}
 			<div class="over">
 				<Tooltip content="Mark as {unread ? '' : 'un'}read" position="left">
 					<Button type={unread ? 'primary' : 'secondary'} small on:click={handleToggle('unread')}>
@@ -210,6 +223,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		&.archived {
+			border-color: variables.$blue-2;
+		}
 	}
 
 	.new {
@@ -282,7 +298,8 @@
 		}
 	}
 
-	.over {
+	.over,
+	.persistent-over {
 		position: absolute;
 		inset: 0 0 0 auto;
 		width: 12rem;
@@ -295,6 +312,19 @@
 		justify-content: start;
 		gap: 0.5rem;
 		transition: opacity variables.$transition;
+	}
+
+	.archive-radio {
+		appearance: none;
+		width: 0.7rem;
+		height: 0.7rem;
+		border-radius: 50%;
+		border-width: 2px;
+		border-style: solid;
+		border-color: variables.$grey-4;
+		&:checked {
+			border-color: variables.$blue-2;
+		}
 	}
 
 	.description {

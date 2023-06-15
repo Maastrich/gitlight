@@ -16,7 +16,8 @@ export const settings = writable<Settings>({
 	readWhenOpenInBrowser: true,
 	readWhenPin: false,
 	notificationAxis: 'Auto',
-	sidebarHidden: false
+	sidebarHidden: false,
+	archive: undefined
 });
 
 export const updateAvailable = writable<string | false>(false);
